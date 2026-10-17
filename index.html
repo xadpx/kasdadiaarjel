@@ -177,16 +177,20 @@ function pump(){
  if(busy)return;
  if(!S.q.length){S.sync='ok';hdrSync();return;}
  busy=true;S.sync='sync';hdrSync();
- fetch(S.url,{method:'POST',body:JSON.stringify(S.q[0])}).then(function(r){return r.json();}).then(function(r){
-  if(!r.ok)throw new Error(r.error||'gagal');S.q.shift();busy=false;pump();
- }).catch(function(){busy=false;S.sync='err';hdrSync();});
+ fetch(S.url,{method:'POST',body:JSON.stringify(S.q[0])}).then(function(r){return r.text();}).then(function(t){
+  var r;try{r=JSON.parse(t);}catch(e){throw{bad:1};}
+  S.q.shift();busy=false;
+  if(!r.ok){S.srvErr=r.error==='Aksi tidak dikenal'?'Server belum diperbarui. Deploy ulang Code.gs sebagai versi baru.':'Ditolak server: '+(r.error||'tidak diketahui')+'.';}
+  pump();
+ }).catch(function(e){busy=false;S.sync='err';S.errBad=!!(e&&e.bad);hdrSync();});
 }
-function retry(){if(S.sync==='err'){pump();}}
-function hdrSync(){var e=$('sync');if(!e)return;e.className='sy '+(S.sync==='err'?'err':'');e.textContent={ok:'',sync:'Menyimpan…',err:'Gagal menyimpan. Ketuk untuk ulangi'}[S.sync];}
+function retry(){if(S.sync==='err'){pump();}else if(S.srvErr){S.srvErr='';hdrSync();}}
+function syncTxt(){return S.sync==='err'?(S.errBad?'Respons server tidak dikenali. Ketuk untuk ulangi':'Gagal menyimpan. Ketuk untuk ulangi'):S.sync==='sync'?'Menyimpan…':(S.srvErr?S.srvErr+' (ketuk untuk tutup)':'');}
+function hdrSync(){var e=$('sync');if(!e)return;e.className='sy '+((S.sync==='err'||S.srvErr)?'err':'');e.textContent=syncTxt();}
 function load(){
  fetch(S.url+'?action=list').then(function(r){return r.json();}).then(function(r){
   if(!r.ok)throw new Error(r.error);
-  if(!S.q.length&&!busy){S.awal=r.saldoAwal;S.tahun=r.tahun||'';S.rows=r.rows.map(function(x){return{id:x.id,tgl:x.tgl,keg:x.keg,u:x.uraian,m:x.masuk,k:x.keluar,kartu:x.kartu||''};});persist();}
+  if(!S.q.length&&!busy){S.oldSrv=!('tahun' in r);S.awal=r.saldoAwal;S.tahun=r.tahun||S.tahun||'';S.rows=r.rows.map(function(x){return{id:x.id,tgl:x.tgl,keg:x.keg,u:x.uraian,m:x.masuk,k:x.keluar,kartu:x.kartu||''};});persist();}
   S.ready=true;S.loadErr='';if(route()==='/'&&!S.pick&&!S.drawer&&!S.mg)render();
  }).catch(function(){S.ready=true;S.loadErr='Belum tersambung. Menampilkan data terakhir.';if(route()==='/'&&!S.pick&&!S.drawer&&!S.mg)render();});
 }
@@ -216,6 +220,7 @@ function vHome(){
   h+='<button class="pillsel" onclick="S.pick=true;render()"><span>'+esc(gShort(g))+'</span>'+ic('down')+'</button><div class="stats num"><div><small>Masuk</small><b class="in">'+fmt(m)+'</b></div><div><small>Keluar</small><b class="out">'+fmt(o)+'</b></div><div><small>Selisih</small><b>'+(m-o<0?'− ':'')+fmt(Math.abs(m-o))+'</b></div></div>';}
  h+='</div>';
  if(S.loadErr)h+='<div class="banner">'+S.loadErr+'</div>';
+ if(S.oldSrv)h+='<div class="banner">Google Sheets belum memakai Code.gs terbaru, jadi tahun periode dan hapus semua belum bisa disimpan. Di Apps Script: Deploy, Manage deployments, ikon pensil, Version: New version, Deploy.</div>';
  if(pend.length){var pm=0,pk=0;pend.forEach(function(r){pm+=r.m;pk+=r.k;});h+='<div class="band" onclick="openMg()">'+ic('bell')+'<span class="t"><b>'+pend.length+' catatan menunggu rahina berikutnya</b><span class="num">+'+fmt(pm)+' / −'+fmt(pk)+'</span></span><u>Gabungkan</u></div>';}
  if(g){h+='<div class="lst">';g.a.forEach(function(r){var i=r.m>0;h+='<div class="row" onclick="openForm(\''+r.id+'\')"><div style="min-width:0"><div class="u">'+esc(r.u)+'</div><div class="d">'+fd(r.tgl)+'</div></div><div class="a num '+(i?'in':'out')+'">'+(i?'+ ':'− ')+fmt(i?r.m:r.k)+'</div></div>';});h+='</div>';}
  h+='<div class="fw"><button class="fab" onclick="openForm(null)" aria-label="Catat transaksi">'+ic('plus')+'</button></div>'+toastHtml();
@@ -395,7 +400,7 @@ function vDrawer(){
  var r=route(),it=[['/','home','Beranda'],['/cari','search','Cari transaksi'],['/export','dl','Laporan'],['/set','set','Pengaturan']];
  var h='<div class="dov" onclick="if(event.target===this){S.drawer=false;render()}"><nav class="drw"><div class="dh"><div class="eyebrow">Buku Kas</div><div class="dt">'+CFG.judul+'</div><div class="ds">Tahun '+thn()+'</div></div><div class="di">';
  it.forEach(function(x){h+='<button class="dm'+(r===x[0]?' on':'')+'" onclick="goTo(\''+x[0]+'\')">'+ic(x[1])+x[2]+'</button>';});
- return h+'</div><div class="df">'+({ok:'Semua perubahan tersimpan',sync:'Menyimpan…',err:'Ada perubahan yang gagal tersimpan'}[S.sync])+'</div></nav></div>';
+ return h+'</div><div class="df">'+(syncTxt()||'Semua perubahan tersimpan')+'</div></nav></div>';
 }
 function goTo(r){S.drawer=false;if(r==='/export')openEx();if(route()===r)render();else location.hash=r;}
 
