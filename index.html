@@ -117,6 +117,7 @@ function ic(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</sv
 var $=function(i){return document.getElementById(i);};
 var S={url:localStorage.getItem('bk_url')||'',awal:0,rows:[],ready:false,sync:'ok',q:[],ed:null,F:null,msg:null,toast:null,ex:{},sg:[],lastR:'',sel:undefined,mg:null,sh:false,pick:false,menu:false,pk:[]};
 var busy=false,TM=null;
+try{S.last=JSON.parse(localStorage.getItem('bk_last')||'null');}catch(e){}
 try{var c0=JSON.parse(localStorage.getItem('bk_cache')||'null');if(c0){S.awal=c0.awal;S.rows=c0.rows;S.ready=true;}}catch(e){}
 
 function p2(n){return(n<10?'0':'')+n;}
@@ -224,16 +225,23 @@ function autoKartu(keg,t){
  return hit||'new';
 }
 function kForm(r){return r.keg===LUAR?'':ck(r);}
+function lastToday(){return S.last&&S.last.d===today()?S.last:null;}
 function defAt(t){
  var a=S.rows.filter(function(r){return r.tgl===t;});
  if(a.length){var r=a[a.length-1];return{keg:r.keg,kartu:kForm(r),hint:'Otomatis dari catatan lain di tanggal ini'};}
- var k=S.rows.length?S.rows[S.rows.length-1].keg:LUAR;
- return{keg:k,kartu:autoKartu(k,t),hint:'Otomatis dari catatan terakhir'};
+ return{keg:LUAR,kartu:'',hint:'Belum ada rahina di tanggal ini, jadi di luar rahina'};
 }
-function freshF(t){var d=defAt(t);return{jenis:'',nom:'',u:'',tgl:t,keg:d.keg,kartu:d.kartu,hint:d.hint,err:'',note:''};}
+function defNew(){
+ var t=today(),l=lastToday();
+ if(l)return{keg:l.keg,kartu:autoKartu(l.keg,t),hint:'Otomatis dari catatan terakhir hari ini'};
+ var d=defAt(t);
+ if(d.keg===LUAR)d.hint='Hari baru, otomatis di luar rahina';
+ return d;
+}
+function freshF(t,d){d=d||defAt(t);return{jenis:'',nom:'',u:'',tgl:t,keg:d.keg,kartu:d.kartu,hint:d.hint,err:'',note:''};}
 function openForm(id){
  if(id){var r=S.rows.filter(function(x){return x.id===id;})[0];S.ed=id;S.F={jenis:r.m>0?'masuk':'keluar',nom:fmt(r.m||r.k),u:r.u,tgl:r.tgl,keg:r.keg,kartu:kForm(r),hint:'',err:'',note:''};}
- else{S.ed=null;S.F=freshF(today());}
+ else{S.ed=null;S.F=freshF(today(),defNew());}
  S.msg=null;S.sh=false;location.hash='/form';
 }
 function sugList(q){
@@ -284,7 +292,7 @@ function save(){
  var wasNew=F.kartu==='new'&&F.keg!==LUAR,kid=F.keg===LUAR?((orig&&orig.keg===LUAR)?orig.kartu:''):(F.kartu==='new'?'k'+uid():F.kartu);
  var o={tgl:F.tgl,keg:F.keg,u:F.u.trim(),m:inn?n:0,k:inn?0:n,kartu:kid};
  if(S.ed){o.id=S.ed;S.rows[S.rows.findIndex(function(r){return r.id===S.ed;})]=o;enq('update',o);persist();S.sel=ck(o);toast('Perubahan disimpan');history.back();return;}
- o.id=uid();S.rows.push(o);enq('add',o);persist();S.sel=ck(o);
+ o.id=uid();S.rows.push(o);enq('add',o);persist();S.sel=ck(o);S.last={d:today(),keg:F.keg};try{localStorage.setItem('bk_last',JSON.stringify(S.last));}catch(e){}
  S.msg={i:inn,t:(inn?'Pemasukan':'Pengeluaran')+' Rp '+fmt(n)+' tersimpan. Saldo '+(inn?'naik':'turun')+' jadi Rp '+fmt(total().s)+'.'};
  var t=F.tgl,k=F.keg,pend=pendRows();
  S.F=freshF(t);S.F.keg=k;S.F.kartu=kid;S.F.hint='Otomatis dari catatan yang baru disimpan';
