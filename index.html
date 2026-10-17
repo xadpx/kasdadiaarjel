@@ -7,13 +7,15 @@
 <meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<script>function applyTheme(v){var d=document.documentElement;d.setAttribute("data-theme",v);var m=document.querySelector("meta[name=color-scheme]");if(m)m.content=v==="light"?"only light":v==="dark"?"dark":"light dark";var t=document.querySelector("meta[name=theme-color]");if(t)t.content=v==="dark"?"#0F1827":"#1B2A41";}applyTheme(localStorage.getItem("bk_theme")||"light");</script>
 <title>Buku Kas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--hd:#1B2A41;--bg:#E9EDF3;--card:#F6F8FB;--ink:#1B2433;--mute:#6C7B92;--line:#DDE3EC;--seg:#DDE4EE;--gold:#D4A64A;--goldink:#2A1F00;--in:#2F7D6B;--inbg:#DFF0EA;--inink:#1F5C4E;--out:#B84C4C;--outbg:#F6E4E4;--outink:#8F3030;--sel:#1B2A41;--selink:#fff;--warn:#F3E7C9;--warnink:#5C4300}
-@media(prefers-color-scheme:dark){:root{--hd:#0F1827;--bg:#0B111C;--card:#151F2F;--ink:#E6ECF5;--mute:#8FA0B8;--line:#24304A;--seg:#1C2840;--gold:#E0B456;--in:#5CCB9E;--inbg:#13322A;--inink:#9BE3C4;--out:#F08A8A;--outbg:#3A1E22;--outink:#FFB3B3;--sel:#E6ECF5;--selink:#0B111C;--warn:#3A2F10;--warnink:#F2D58A}}
+:root{--hd:#1B2A41;--bg:#E9EDF3;--card:#F6F8FB;--ink:#1B2433;--mute:#6C7B92;--line:#DDE3EC;--seg:#DDE4EE;--gold:#D4A64A;--goldink:#2A1F00;--in:#2F7D6B;--inbg:#DFF0EA;--inink:#1F5C4E;--out:#B84C4C;--outbg:#F6E4E4;--outink:#8F3030;--sel:#1B2A41;--selink:#fff;--warn:#F3E7C9;--warnink:#5C4300;color-scheme:light}
+:root[data-theme=dark]{--hd:#0F1827;--bg:#0B111C;--card:#151F2F;--ink:#E6ECF5;--mute:#8FA0B8;--line:#24304A;--seg:#1C2840;--gold:#E0B456;--in:#5CCB9E;--inbg:#13322A;--inink:#9BE3C4;--out:#F08A8A;--outbg:#3A1E22;--outink:#FFB3B3;--sel:#E6ECF5;--selink:#0B111C;--warn:#3A2F10;--warnink:#F2D58A;color-scheme:dark}
+@media(prefers-color-scheme:dark){:root[data-theme=auto]{--hd:#0F1827;--bg:#0B111C;--card:#151F2F;--ink:#E6ECF5;--mute:#8FA0B8;--line:#24304A;--seg:#1C2840;--gold:#E0B456;--in:#5CCB9E;--inbg:#13322A;--inink:#9BE3C4;--out:#F08A8A;--outbg:#3A1E22;--outink:#FFB3B3;--sel:#E6ECF5;--selink:#0B111C;--warn:#3A2F10;--warnink:#F2D58A;color-scheme:dark}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{overflow-x:hidden;-webkit-text-size-adjust:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;width:100%;overflow-x:clip;background:var(--bg);color:var(--ink);font:400 15px/1.45 'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
@@ -319,7 +321,8 @@ function vMerge(){
 }
 
 /* ---- pengaturan ---- */
-function vSet(){return'<div class="hd sm"><button class="ib" onclick="history.back()" aria-label="Kembali">'+ic('back')+'</button><div class="ttl">Pengaturan</div></div><div class="pad"><div class="lb" style="margin-top:8px">Saldo awal (kas sebelumnya)</div><input id="sa" class="nom num" inputmode="numeric" value="'+fmt(S.awal)+'" oninput="var n=num(this.value);this.value=n?n.toLocaleString(\'id-ID\'):\'\'"><div class="mute" style="margin:8px 0 16px">Semua saldo dihitung ulang dari angka ini.</div><button class="btn g" onclick="saveAwal()">Simpan saldo awal</button><div class="lb" style="margin-top:30px">Alamat web app</div><input id="url2" value="'+esc(S.url)+'" autocapitalize="off" spellcheck="false"><button class="btn ghost" onclick="saveUrl()">Simpan alamat</button></div>';}
+function vSet(){return'<div class="hd sm"><button class="ib" onclick="history.back()" aria-label="Kembali">'+ic('back')+'</button><div class="ttl">Pengaturan</div></div><div class="pad"><div class="lb" style="margin-top:8px">Saldo awal (kas sebelumnya)</div><input id="sa" class="nom num" inputmode="numeric" value="'+fmt(S.awal)+'" oninput="var n=num(this.value);this.value=n?n.toLocaleString(\'id-ID\'):\'\'"><div class="mute" style="margin:8px 0 16px">Semua saldo dihitung ulang dari angka ini.</div><button class="btn g" onclick="saveAwal()">Simpan saldo awal</button><div class="lb" style="margin-top:30px">Tampilan</div><div class="chips">'+[['light','Terang'],['dark','Gelap'],['auto','Ikuti HP']].map(function(x){return'<button class="ch'+((localStorage.getItem('bk_theme')||'light')===x[0]?' on':'')+'" onclick="setTheme(\''+x[0]+'\')">'+x[1]+'</button>';}).join('')+'</div><div class="lb" style="margin-top:30px">Alamat web app</div><input id="url2" value="'+esc(S.url)+'" autocapitalize="off" spellcheck="false"><button class="btn ghost" onclick="saveUrl()">Simpan alamat</button></div>';}
+function setTheme(v){try{localStorage.setItem('bk_theme',v);}catch(e){}applyTheme(v);render();}
 function saveAwal(){S.awal=num($('sa').value);S.q.push({action:'setAwal',saldoAwal:S.awal});pump();persist();toast('Saldo awal disimpan');history.back();}
 function saveUrl(){var u=$('url2').value.trim();if(/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)){S.url=u;localStorage.setItem('bk_url',u);load();toast('Alamat disimpan');history.back();}else alert('Alamat harus berakhiran /exec');}
 
